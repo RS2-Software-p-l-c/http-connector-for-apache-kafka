@@ -25,21 +25,19 @@ import io.aiven.kafka.connect.http.sender.HttpSender;
 
 final class SingleRecordSender extends RecordSender {
 
-    protected SingleRecordSender(final HttpSender httpSender, final RecordValueConverter recordValueConverter) {
+    SingleRecordSender(final HttpSender httpSender, final RecordValueConverter recordValueConverter) {
         super(httpSender, recordValueConverter);
     }
 
     @Override
     public void send(final Collection<SinkRecord> records) {
         for (final SinkRecord record : records) {
-            final String body = recordValueConverter.convert(record);
-            httpSender.send(body);
+            httpSender.send(record, recordValueConverter);
         }
     }
 
     @Override
     public void send(final SinkRecord record) {
-        final String body = recordValueConverter.convert(record);
-        httpSender.send(body);
+        httpSender.send(record, recordValueConverter);
     }
 }

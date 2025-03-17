@@ -17,7 +17,14 @@
 package io.aiven.kafka.connect.http.sender;
 
 import java.net.http.HttpResponse;
+import io.aiven.kafka.connect.http.converter.RecordValueConverter;
+import org.apache.kafka.connect.sink.SinkRecord;
+
 
 public interface HttpSender {
     HttpResponse<String> send(final String body);
+
+    default HttpResponse<String> send(final SinkRecord record, final RecordValueConverter recordValueConverter) {
+        return send(recordValueConverter.convert(record));
+    }
 }

@@ -24,10 +24,10 @@ import java.net.http.HttpResponse;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.kafka.connect.errors.ConnectException;
-
+import io.aiven.kafka.connect.http.converter.RecordValueConverter;
 import io.aiven.kafka.connect.http.config.HttpSinkConfig;
-
+import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +50,16 @@ abstract class AbstractHttpSender {
     public final HttpResponse<String> send(final String body) {
         final var requestBuilder =
                 httpRequestBuilder.build(config).POST(HttpRequest.BodyPublishers.ofString(body));
+        return sendWithRetries(requestBuilder, HttpResponseHandler.ON_HTTP_ERROR_RESPONSE_HANDLER,
+                config.maxRetries());
+    }
+
+    public final HttpResponse<String> send(final SinkRecord record, final RecordValueConverter recordValueConverter) {
+        final var requestBuilder =
+                httpRequestBuilder.build(config).
+                        POST(HttpRequest.BodyPublishers.ofString(recordValueConverter.convert(record)));
+        record.headers().forEach(header -> requestBuilder.header(header.key(), header.value().toString()));
+
         return sendWithRetries(requestBuilder, HttpResponseHandler.ON_HTTP_ERROR_RESPONSE_HANDLER,
                 config.maxRetries());
     }
