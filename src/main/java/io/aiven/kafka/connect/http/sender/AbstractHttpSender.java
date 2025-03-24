@@ -24,10 +24,12 @@ import java.net.http.HttpResponse;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import io.aiven.kafka.connect.http.converter.RecordValueConverter;
-import io.aiven.kafka.connect.http.config.HttpSinkConfig;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
+
+import io.aiven.kafka.connect.http.config.HttpSinkConfig;
+import io.aiven.kafka.connect.http.converter.RecordValueConverter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +41,10 @@ abstract class AbstractHttpSender {
     protected final HttpSinkConfig config;
     protected final HttpRequestBuilder httpRequestBuilder;
 
+    protected static final String HTTP_HEADER_UNIX_PLACEHOLDER = "${unix-timestamp}";
+
     protected AbstractHttpSender(
-            final HttpSinkConfig config, final HttpRequestBuilder httpRequestBuilder, final HttpClient httpClient
+        final HttpSinkConfig config, final HttpRequestBuilder httpRequestBuilder, final HttpClient httpClient
     ) {
         this.config = Objects.requireNonNull(config);
         this.httpRequestBuilder = Objects.requireNonNull(httpRequestBuilder);
@@ -49,19 +53,19 @@ abstract class AbstractHttpSender {
 
     public final HttpResponse<String> send(final String body) {
         final var requestBuilder =
-                httpRequestBuilder.build(config).POST(HttpRequest.BodyPublishers.ofString(body));
+            httpRequestBuilder.build(config).POST(HttpRequest.BodyPublishers.ofString(body));
         return sendWithRetries(requestBuilder, HttpResponseHandler.ON_HTTP_ERROR_RESPONSE_HANDLER,
-                config.maxRetries());
+                               config.maxRetries());
     }
 
     public final HttpResponse<String> send(final SinkRecord record, final RecordValueConverter recordValueConverter) {
         final var requestBuilder =
-                httpRequestBuilder.build(config).
-                        POST(HttpRequest.BodyPublishers.ofString(recordValueConverter.convert(record)));
+            httpRequestBuilder.build(config)
+                .POST(HttpRequest.BodyPublishers.ofString(recordValueConverter.convert(record)));
         record.headers().forEach(header -> requestBuilder.header(header.key(), header.value().toString()));
 
         return sendWithRetries(requestBuilder, HttpResponseHandler.ON_HTTP_ERROR_RESPONSE_HANDLER,
-                config.maxRetries());
+                               config.maxRetries());
     }
 
     /**
@@ -70,22 +74,23 @@ abstract class AbstractHttpSender {
      * @return whether the sending was successful.
      */
     protected HttpResponse<String> sendWithRetries(
-            final Builder requestBuilderWithPayload, final HttpResponseHandler httpResponseHandler,
-            final int retries
+        final Builder requestBuilderWithPayload, final HttpResponseHandler httpResponseHandler,
+        final int retries
     ) {
         int remainingRetries = retries;
         while (remainingRetries >= 0) {
             try {
                 try {
-                    final var response =
-                            httpClient.send(requestBuilderWithPayload.build(), HttpResponse.BodyHandlers.ofString());
+                    final HttpRequest request = refreshHeaders(requestBuilderWithPayload.build());
+                    final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
                     log.debug("Server replied with status code {} and body {}", response.statusCode(), response.body());
                     // Handle the response
                     httpResponseHandler.onResponse(response, remainingRetries);
                     return response;
                 } catch (final IOException e) {
                     log.info("Sending failed, will retry in {} ms ({} retries remain)", config.retryBackoffMs(),
-                            remainingRetries, e);
+                             remainingRetries, e);
                     remainingRetries -= 1;
                     TimeUnit.MILLISECONDS.sleep(config.retryBackoffMs());
                 }
@@ -98,4 +103,20 @@ abstract class AbstractHttpSender {
         throw new ConnectException("Sending failed and no retries remain, stopping");
     }
 
+    protected HttpRequest refreshHeaders(final HttpRequest request) {
+        // Duplicate the request
+        final HttpRequest.Builder newRequestBuilder = HttpRequest.newBuilder(request.uri())
+            .method(request.method(), request.bodyPublisher().orElse(null));
+
+        // Iterate through the headers and replace the placeholders
+        request.headers().map().forEach((key, values) -> {
+            for (final String value : values) {
+                final String updatedValue = value.replace(HTTP_HEADER_UNIX_PLACEHOLDER,
+                                                          String.valueOf(System.currentTimeMillis()));
+                newRequestBuilder.header(key, updatedValue);
+            }
+        });
+
+        return newRequestBuilder.build();
+    }
 }
