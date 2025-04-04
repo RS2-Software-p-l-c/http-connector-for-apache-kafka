@@ -43,6 +43,9 @@ Connection
   * Valid Values: Key value pair string list with format header:value
   * Importance: low
 
+  Placeholders
+  * ${unix-timestamp}: Current System Timestamp
+
 ``oauth2.access.token.url``
   The URL to be used for fetching an access token. Client Credentials is the only supported grant type.
 
