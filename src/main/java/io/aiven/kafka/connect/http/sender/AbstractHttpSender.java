@@ -103,6 +103,14 @@ abstract class AbstractHttpSender {
         throw new ConnectException("Sending failed and no retries remain, stopping");
     }
 
+    /**
+     * Refreshes the headers in the given HTTP request by replacing placeholders with dynamically generated values.
+     * Specifically, it replaces occurrences of {@code HTTP_HEADER_UNIX_PLACEHOLDER} with the current system timestamp.
+     *
+     * @param request - The original HTTP request to be modified.
+     *
+     * @return A new {@link HttpRequest} instance with updated headers.
+     */
     protected HttpRequest refreshHeaders(final HttpRequest request) {
         // Duplicate the request
         final HttpRequest.Builder newRequestBuilder = HttpRequest.newBuilder(request.uri())
