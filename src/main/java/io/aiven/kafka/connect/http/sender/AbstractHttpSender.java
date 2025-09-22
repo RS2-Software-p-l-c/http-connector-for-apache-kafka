@@ -17,6 +17,8 @@
 package io.aiven.kafka.connect.http.sender;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.Builder;
@@ -25,6 +27,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.header.Header;
 import org.apache.kafka.connect.sink.SinkRecord;
 
 import io.aiven.kafka.connect.http.config.HttpSinkConfig;
@@ -42,6 +45,7 @@ abstract class AbstractHttpSender {
     protected final HttpRequestBuilder httpRequestBuilder;
 
     protected static final String HTTP_HEADER_UNIX_PLACEHOLDER = "${unix-timestamp}";
+    protected static final String TARGET_URL_HEADER = "X-Target-URL";
 
     protected AbstractHttpSender(
         final HttpSinkConfig config, final HttpRequestBuilder httpRequestBuilder, final HttpClient httpClient
@@ -62,6 +66,19 @@ abstract class AbstractHttpSender {
         final var requestBuilder =
             httpRequestBuilder.build(config)
                 .POST(HttpRequest.BodyPublishers.ofString(recordValueConverter.convert(record)));
+
+        if (config.httpUri().toString().equalsIgnoreCase(HttpSinkConfig.DYNAMIC_HTTP_URL_CONFIG)) {
+            Header urlHeader = record.headers().lastWithName(TARGET_URL_HEADER);
+            log.info("Current URI config is {}", config.httpUri());
+            log.info("Sending request to {}", urlHeader.value());
+
+            try {
+                requestBuilder.uri(new URI((String) urlHeader.value()));
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         record.headers().forEach(header -> requestBuilder.header(header.key(), header.value().toString()));
 
         return sendWithRetries(requestBuilder, HttpResponseHandler.ON_HTTP_ERROR_RESPONSE_HANDLER,

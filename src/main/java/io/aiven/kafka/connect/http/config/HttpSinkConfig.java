@@ -45,6 +45,8 @@ public final class HttpSinkConfig extends AbstractConfig {
     private static final String HTTP_PROXY_PORT = "http.proxy.port";
     private static final String HTTP_SSL_TRUST_ALL_CERTIFICATES = "http.ssl.trust.all.certs";
 
+    public static final String DYNAMIC_HTTP_URL_CONFIG = "dynamic";
+
     private static final String HTTP_AUTHORIZATION_TYPE_CONFIG = "http.authorization.type";
     private static final String HTTP_HEADERS_AUTHORIZATION_CONFIG = "http.headers.authorization";
     private static final String HTTP_HEADERS_CONTENT_TYPE_CONFIG = "http.headers.content.type";
@@ -673,7 +675,7 @@ public final class HttpSinkConfig extends AbstractConfig {
     }
 
     public final URI httpUri() {
-        return toURI(HTTP_URL_CONFIG);
+      return DYNAMIC_HTTP_URL_CONFIG.equalsIgnoreCase(HTTP_URL_CONFIG) ? null : toURI(HTTP_URL_CONFIG);
     }
 
     public final Long kafkaRetryBackoffMs() {
