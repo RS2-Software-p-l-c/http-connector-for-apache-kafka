@@ -679,8 +679,6 @@ public final class HttpSinkConfig extends AbstractConfig {
     }
 
     public final URI httpUri() {
-      log.info("Comparing provided url {} with dynamic placeholder {}.", getString(HTTP_URL_CONFIG), DYNAMIC_HTTP_URL_CONFIG);
-
       return DYNAMIC_HTTP_URL_CONFIG.equalsIgnoreCase(getString(HTTP_URL_CONFIG)) ? null : toURI(HTTP_URL_CONFIG);
     }
 
