@@ -35,6 +35,8 @@ import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.config.types.Password;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.json.DecimalFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -90,6 +92,8 @@ public final class HttpSinkConfig extends AbstractConfig {
 
     private static final String ERRORS_GROUP = "Errors Handling";
     private static final String ERRORS_TOLERANCE = "errors.tolerance";
+
+  private static final Logger log = LoggerFactory.getLogger(HttpSinkConfig.class);
 
     public static ConfigDef configDef() {
         final ConfigDef configDef = new ConfigDef();
@@ -675,7 +679,9 @@ public final class HttpSinkConfig extends AbstractConfig {
     }
 
     public final URI httpUri() {
-      return DYNAMIC_HTTP_URL_CONFIG.equalsIgnoreCase(HTTP_URL_CONFIG) ? null : toURI(HTTP_URL_CONFIG);
+      log.info("Comparing provided url {} with dynamic placeholder {}.", getString(HTTP_URL_CONFIG), DYNAMIC_HTTP_URL_CONFIG);
+
+      return DYNAMIC_HTTP_URL_CONFIG.equalsIgnoreCase(getString(HTTP_URL_CONFIG)) ? null : toURI(HTTP_URL_CONFIG);
     }
 
     public final Long kafkaRetryBackoffMs() {

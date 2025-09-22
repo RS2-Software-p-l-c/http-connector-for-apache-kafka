@@ -67,10 +67,10 @@ abstract class AbstractHttpSender {
             httpRequestBuilder.build(config)
                 .POST(HttpRequest.BodyPublishers.ofString(recordValueConverter.convert(record)));
 
-        if (config.httpUri().toString().equalsIgnoreCase(HttpSinkConfig.DYNAMIC_HTTP_URL_CONFIG)) {
+        // The httpUri will be set to null whenever a dynamic URL configuration is required.
+        if (config.httpUri() == null) {
             Header urlHeader = record.headers().lastWithName(TARGET_URL_HEADER);
-            log.info("Current URI config is {}", config.httpUri());
-            log.info("Sending request to {}", urlHeader.value());
+            log.info("Using dynamic URL of: {}", urlHeader.value());
 
             try {
                 requestBuilder.uri(new URI((String) urlHeader.value()));
