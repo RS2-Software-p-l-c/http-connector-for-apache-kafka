@@ -69,12 +69,12 @@ abstract class AbstractHttpSender {
 
         // The httpUri will be set to null whenever a dynamic URL configuration is required.
         if (config.httpUri() == null) {
-            Header urlHeader = record.headers().lastWithName(TARGET_URL_HEADER);
+            final Header urlHeader = record.headers().lastWithName(TARGET_URL_HEADER);
             log.info("Using dynamic URL of: {}", urlHeader.value());
 
             try {
                 requestBuilder.uri(new URI((String) urlHeader.value()));
-            } catch (URISyntaxException e) {
+            } catch (final URISyntaxException e) {
                 throw new RuntimeException(e);
             }
         }
