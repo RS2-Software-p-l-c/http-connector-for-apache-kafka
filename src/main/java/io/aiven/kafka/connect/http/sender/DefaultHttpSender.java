@@ -34,8 +34,11 @@ class DefaultHttpSender extends AbstractHttpSender implements HttpSender {
         @Override
         public Builder build(final HttpSinkConfig config) {
             final var httpRequest = HttpRequest
-                .newBuilder(config.httpUri())
+                .newBuilder()
                 .timeout(Duration.ofSeconds(config.httpTimeout()));
+            if (config.httpUri() != null) {
+                httpRequest.uri(config.httpUri());
+            }
             config
                 .getAdditionalHeaders()
                 .forEach(httpRequest::header);
@@ -44,7 +47,6 @@ class DefaultHttpSender extends AbstractHttpSender implements HttpSender {
             }
             return httpRequest;
         }
-
     }
 
 }

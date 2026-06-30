@@ -37,6 +37,8 @@ import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.json.DecimalFormat;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class HttpSinkConfig extends AbstractConfig {
     private static final String CONNECTION_GROUP = "Connection";
@@ -44,6 +46,8 @@ public final class HttpSinkConfig extends AbstractConfig {
     private static final String HTTP_PROXY_HOST = "http.proxy.host";
     private static final String HTTP_PROXY_PORT = "http.proxy.port";
     private static final String HTTP_SSL_TRUST_ALL_CERTIFICATES = "http.ssl.trust.all.certs";
+
+    public static final String DYNAMIC_HTTP_URL_CONFIG = "dynamic";
 
     private static final String HTTP_AUTHORIZATION_TYPE_CONFIG = "http.authorization.type";
     private static final String HTTP_HEADERS_AUTHORIZATION_CONFIG = "http.headers.authorization";
@@ -88,6 +92,8 @@ public final class HttpSinkConfig extends AbstractConfig {
 
     private static final String ERRORS_GROUP = "Errors Handling";
     private static final String ERRORS_TOLERANCE = "errors.tolerance";
+
+    private static final Logger log = LoggerFactory.getLogger(HttpSinkConfig.class);
 
     public static ConfigDef configDef() {
         final ConfigDef configDef = new ConfigDef();
@@ -673,7 +679,7 @@ public final class HttpSinkConfig extends AbstractConfig {
     }
 
     public final URI httpUri() {
-        return toURI(HTTP_URL_CONFIG);
+        return DYNAMIC_HTTP_URL_CONFIG.equalsIgnoreCase(getString(HTTP_URL_CONFIG)) ? null : toURI(HTTP_URL_CONFIG);
     }
 
     public final Long kafkaRetryBackoffMs() {

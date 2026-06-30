@@ -22,9 +22,14 @@ import java.net.URL;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 class UrlValidator implements ConfigDef.Validator {
 
     private final boolean skipNullString;
+
+    private static final Logger log = LoggerFactory.getLogger(UrlValidator.class);
 
     UrlValidator() {
         this(false);
@@ -44,6 +49,10 @@ class UrlValidator implements ConfigDef.Validator {
         }
         if (!(value instanceof String)) {
             throw new ConfigException(name, value, "must be string");
+        }
+        if (value.toString().equalsIgnoreCase(HttpSinkConfig.DYNAMIC_HTTP_URL_CONFIG)) {
+            log.info("Starting connector with DYNAMIC URL configuration");
+            return;
         }
         try {
             new URL((String) value);
